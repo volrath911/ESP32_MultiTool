@@ -8,6 +8,9 @@
 #include <ArduinoJson.h>
 #include "user_config.h"
 
+/*** BlueTooth***/
+#include "SimpleBLE.h" 
+
 /* OverTheAir */
 int OTAport = 8266;
 
@@ -16,6 +19,7 @@ int OTAport = 8266;
 #define LUXPIN 34
 
 Adafruit_BME280 bme;
+SimpleBLE ble;
 
 /* sensor Def */
 float luxValue;
@@ -91,6 +95,9 @@ void setup(){
   Serial.print("IPess: ");
   Serial.println(WiFi.localIP());
   reconnect();
+
+  ble.begin("ESP32 Sensor1");
+  
 }
 
 /* Wifi */
