@@ -1,6 +1,6 @@
 /************ includes  *************/
 #include <WiFi.h> 
-#include <DHT.h>
+
 #include <PubSubClient.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
@@ -26,16 +26,17 @@ int OTAport = 8266;
 
 
 /* Pins */
-#define LUXPIN 34
+#define LUXPIN 33
 
 Adafruit_BME280 bme;
-SimpleBLE ble;
+
 
 /* sensor Def */
-float luxValue;
+int luxMedian = 5;
+int luxCalc;
 int LUX;
 float calcLux;
-float diffLux = 10;
+float diffLux = 25;
 
 float diffTemp = 0.2;
 float tempValue;
@@ -43,7 +44,7 @@ float tempValue;
 float diffHum = 1;
 float humValue;
 
-float diffPres = 100;
+float diffPres = 10;
 float presValue;
 
 
@@ -117,7 +118,11 @@ void setup(){
   Serial.println("Starting Node named " + String(SENSORNAME));
 
   setup_wifi();
-  btStart();
+    Serial.println("Wifi Started"); 
+   Serial.println("Bluetooth Starting"); 
+  if (!btStart()){
+    Serial.println("Cannot Start Bluetooth");
+  }
   
   esp_bluedroid_init();
   esp_bluedroid_enable();
@@ -128,7 +133,7 @@ void setup(){
   }
 
   client.setServer(mqtt_server, mqtt_port);
- 
+  Serial.println("Connection Started!"); 
 
   ArduinoOTA.onStart([]() {
     Serial.println("Starting");
@@ -153,7 +158,7 @@ void setup(){
   Serial.println(WiFi.localIP());
   reconnect();
 
-  ble.begin("ESP32 Sensor1");
+  
   ble_client_appRegister();
 
 }
@@ -562,15 +567,22 @@ void loop() {
 
   if(!client.connected()){
     //reconnect();
+    delay(600);
     software_Reset();
   }
-
-  float newLuxValue = analogRead(LUXPIN);
+  
+  luxCalc = 0;
+  for (int i = 0; i < luxMedian; i++) {
+    luxCalc = luxCalc + (analogRead(LUXPIN) *0.9765625);
+    delay(60);
+  }
+  int newLuxValue = luxCalc / luxMedian;
   float newTempValue = bme.readTemperature();
   float newHumValue = bme.readHumidity();
-  float newPresValue = bme.readPressure();
+  float newPresValue = bme.readPressure()/100;
   
-  client.loop();
+ 
+delay(100);
 
  if (checkBoundSensor(newTempValue, tempValue, diffTemp)){ 
   tempValue = newTempValue;
@@ -588,6 +600,7 @@ void loop() {
  }
 
  if (checkBoundSensor(newLuxValue, LUX, diffLux)){
+  
   LUX = newLuxValue;
   sendState();
  }
