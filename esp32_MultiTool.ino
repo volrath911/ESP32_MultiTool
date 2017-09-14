@@ -526,8 +526,10 @@ void sendBleState() {
 
   JsonObject& root = jsonBuffer.createObject();
 
-  root["macaddr"] = (String)macAddr;
-  root["rssi"] = (String)rssi;
+  root["hostname"] =(String)HostName;
+  root["mac"] = (String)macAddr;
+  root["rssi"] = rssi;
+  root["is_scan_response"] = 0;
   
 
   char buffer[root.measureLength() + 1];
